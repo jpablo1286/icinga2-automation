@@ -1,0 +1,62 @@
+-
+  name: Install and Setup MySQL
+  hosts: mysql
+  tasks:
+    - include_vars: mysql.vars.yml
+    - name: Fix resolv.conf
+      become: yes
+      template: 
+        src: "./templates/resolv.cnf" 
+        dest: "/etc/resolv.conf"
+        mode: "0600"
+    - name: clean script
+      become: yes
+      template: 
+        src: "./templates/clean.sh" 
+        dest: "/root/clean.sh"
+        mode: "0755"
+    - name: Execute clean
+      become: yes
+      command: /root/clean.sh
+    - name: Install Mysql
+      become: yes
+      yum:
+        name: mariadb-server
+        state: present
+    - name: Start Mysql
+      become: yes
+      service:
+        name: mariadb
+        state: started
+        enabled: true
+    - name: Install the Python MySQL Support Libraries
+      become: yes
+      yum: 
+        name: MySQL-python 
+        state: present
+    - name: update mysql root password for all root accounts
+      mysql_user:
+        name: "{{ mysql_user }}"
+        host: "{{ item }}"
+        password: "{{ mysql_password }}"
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        check_implicit_admin: yes
+        priv: "*.*:ALL,GRANT"
+      with_items:
+        - "{{ mysql_subnet }}"
+        - 127.0.0.1
+        - ::1
+        - localhost
+    - name: Copy the root credentials as .my.cnf file
+      template: 
+        src: "./templates/my.cnf" 
+        dest: "~/.my.cnf"
+        mode: "0600"
+    - name: Create a new database with name 'icinga'
+      mysql_db:
+        name: icinga
+        state: present
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_host: 127.0.0.1    

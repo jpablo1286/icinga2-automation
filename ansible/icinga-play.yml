@@ -1,0 +1,6 @@
+-
+  name: Install and Setup Icinga2
+  hosts: icinga
+  tasks:
+    - name: Execute command date
+      command: date

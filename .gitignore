@@ -1,0 +1,9 @@
+**/.terraform/*
+# .tfstate files
+*.tfstate
+*.tfstate.*
+#vars
+*.tfvars
+*.vars.yml
+*.pem
+*.pem.*

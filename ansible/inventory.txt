@@ -1,0 +1,2 @@
+mysql ansible_host=192.168.28.252 ansible_user=terraform
+icinga ansible_host=192.168.28.251 ansible_user=terraform
