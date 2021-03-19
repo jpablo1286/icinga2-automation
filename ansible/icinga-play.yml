@@ -3,6 +3,17 @@
   hosts: icinga
   tasks:
     - include_vars: mysql.vars.yml
+    - name: Changing Hostname
+      become: yes
+      hostname:
+        name: "{{ hostname }}"
+    - name: add hostname to /etc/hosts
+      become: yes
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: '127.0.0.1 localhost {{ hostname }}'
+        state: present
     - name: Fix resolv.conf
       become: yes
       template: 
@@ -73,20 +84,6 @@
       yum: 
         name: MySQL-python 
         state: present
-    - name: Drop database if exist
-      community.mysql.mysql_query:
-        login_user: "{{ mysql_user }}"
-        login_password: "{{ mysql_password }}"
-        login_host: "{{ mysql_host }}"
-        query: DROP DATABASE IF EXISTS icinga; CREATE DATABASE icinga
-    - name: Import icinga2 schema
-      mysql_db:
-        state: import
-        name: icinga
-        target: /usr/share/icinga2-ido-mysql/schema/mysql.sql
-        login_user: "{{ mysql_user }}"
-        login_password: "{{ mysql_password }}"
-        login_host: "{{ mysql_host }}"
     - name: Restart Icinga2
       become: yes
       service:
@@ -251,25 +248,57 @@
         owner: root
         group: icingaweb2
         mode: 0770
-    - name: icingaweb2_base.sql
+    ## Applying host,services,groups config from templates
+    - name: groups.conf
       become: yes
       template:
-        src: templates/icingaweb/base/icingaweb2_base.sql
-        dest: /usr/share/icinga2-ido-mysql/schema/icingaweb2_base.sql
-        owner: root
-        group: icingaweb2
-        mode: 0755
-    - name: Drop database if exist
-      community.mysql.mysql_query:
-        login_user: "{{ mysql_user }}"
-        login_password: "{{ mysql_password }}"
-        login_host: "{{ mysql_host }}"
-        query: DROP DATABASE IF EXISTS icingaweb2; CREATE DATABASE icingaweb2
-    - name: Import icingaweb2 schema
-      mysql_db:
-        state: import
-        name: icingaweb2
-        target: /usr/share/icinga2-ido-mysql/schema/icingaweb2_base.sql
-        login_user: "{{ mysql_user }}"
-        login_password: "{{ mysql_password }}"
-        login_host: "{{ mysql_host }}"
+        src: templates/icinga2/groups.conf
+        dest: /etc/icinga2/conf.d/groups.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: hosts.conf
+      become: yes
+      template:
+        src: templates/icinga2/hosts.conf
+        dest: /etc/icinga2/conf.d/hosts.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: notifications.conf
+      become: yes
+      template:
+        src: templates/icinga2/notifications.conf
+        dest: /etc/icinga2/conf.d/notifications.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: services.conf
+      become: yes
+      template:
+        src: templates/icinga2/services.conf
+        dest: /etc/icinga2/conf.d/services.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: templates.conf
+      become: yes
+      template:
+        src: templates/icinga2/templates.conf
+        dest: /etc/icinga2/conf.d/templates.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: users.conf
+      become: yes
+      template:
+        src: templates/icinga2/users.conf
+        dest: /etc/icinga2/conf.d/users.conf
+        owner: icinga
+        group: icinga
+        mode: 0640
+    - name: Restart Icinga2
+      become: yes
+      service:
+        name: icinga2
+        state: restarted

@@ -3,6 +3,17 @@
   hosts: mysql
   tasks:
     - include_vars: mysql.vars.yml
+    - name: Changing Hostname
+      become: yes
+      hostname:
+        name: "{{ hostname }}"
+    - name: add hostname to /etc/hosts
+      become: yes
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: '127.0.0.1 localhost {{ hostname }}'
+        state: present
     - name: Fix resolv.conf
       become: yes
       template: 
@@ -75,3 +86,35 @@
       with_items:
         - "icinga"
         - "icingaweb2"
+    - name: mysql.sql
+      become: yes
+      template:
+        src: templates/icingaweb/base/mysql.sql
+        dest: /tmp/mysql.sql
+        owner: terraform
+        group: terraform
+        mode: 0755
+    - name: Import icinga2 schema
+      mysql_db:
+        state: import
+        name: icinga
+        target: /tmp/mysql.sql
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_host: "{{ mysql_host }}"
+    - name: icingaweb2_base.sql
+      become: yes
+      template:
+        src: templates/icingaweb/base/icingaweb2_base.sql
+        dest: /tmp/icingaweb2_base.sql
+        owner: terraform
+        group: terraform
+        mode: 0755
+    - name: Import icingaweb2 schema
+      mysql_db:
+        state: import
+        name: icingaweb2
+        target: /tmp/icingaweb2_base.sql
+        login_user: "{{ mysql_user }}"
+        login_password: "{{ mysql_password }}"
+        login_host: "{{ mysql_host }}"

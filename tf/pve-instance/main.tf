@@ -8,8 +8,8 @@ resource "proxmox_vm_qemu" "base-vm" {
   cores = 2
   sockets = 1
   vcpus = 2
-  memory = 2048
-  balloon = 2048
+  memory = 1024
+  balloon = 1024
   boot =  "c"
   bootdisk = "virtio0"
   ciuser = var.ssh_user
@@ -55,6 +55,6 @@ resource "proxmox_vm_qemu" "base-vm" {
 
   provisioner "local-exec" {
     working_dir = "../ansible/"
-    command = "export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook -u ${var.ssh_user} --key-file ../tf/${var.ssh_key} -i inventory.txt ${var.playbook}"
+    command = "export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook -u ${var.ssh_user} --key-file ../tf/${var.ssh_key} --extra-vars 'hostname=${var.vm_name}' -i inventory.txt ${var.playbook}"
   }
 }
